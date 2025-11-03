@@ -12,13 +12,8 @@
       text-align: center;
       padding: 20px;
     }
-    h1 {
-      color: #333;
-    }
-    #valor {
-      font-size: 2em;
-      color: #0078d4;
-    }
+    h1 { color: #333; }
+    #valor { font-size: 2em; color: #0078d4; }
     canvas {
       margin-top: 20px;
       max-width: 600px;
@@ -35,7 +30,7 @@
   <canvas id="grafico"></canvas>
 
   <script>
-    const socket = io("https://sensor-server-388w.onrender.com");
+    const socket = io("https://sensor-server-388w.onrender.com"); // tu servidor Render
     const valorDiv = document.getElementById("valor");
 
     // Configuración del gráfico
@@ -53,9 +48,7 @@
           tension: 0.3
         }]
       },
-      options: {
-        scales: { y: { beginAtZero: true } }
-      }
+      options: { scales: { y: { beginAtZero: true } }, animation: false }
     });
 
     // Recibir datos en tiempo real
@@ -74,3 +67,4 @@
   </script>
 </body>
 </html>
+
