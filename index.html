@@ -2,37 +2,39 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Monitoreo de Sensor en Tiempo Real</title>
+  <title>Monitoreo EEG/ECG</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
       background: #f7f7f7;
-      text-align: center;
-      padding: 20px;
+      font-family: Arial, sans-serif;
     }
-    h1 { color: #333; }
-    canvas {
-      margin: 20px auto;
+    #grafico {
       display: block;
-      max-width: 600px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      height: 100vh;
     }
     #info {
-      display: flex;
-      justify-content: center;
-      gap: 30px;
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      text-align: right;
       font-size: 1.5em;
-      margin-top: 10px;
-      position: relative;
+      background: rgba(255,255,255,0.7);
+      padding: 10px 15px;
+      border-radius: 10px;
+    }
+    #info div {
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
-  <h1>Monitoreo de Sensor</h1>
   <div id="info">
     <div id="temperatura">Temp: -- °C</div>
     <div id="bpm">BPM: --</div>
@@ -44,7 +46,7 @@
     const tempDiv = document.getElementById("temperatura");
     const bpmDiv = document.getElementById("bpm");
 
-    // Web Audio API para sonidos
+    // --- Sonido pip y alarma ---
     function pip() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = audioCtx.createOscillator();
@@ -75,7 +77,7 @@
       }
     }
 
-    // Configuración del gráfico
+    // --- Configuración del gráfico ---
     const ctx = document.getElementById("grafico").getContext("2d");
     const grafico = new Chart(ctx, {
       type: "line",
@@ -91,25 +93,29 @@
         }]
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
         scales: { y: { beginAtZero: false } },
-        animation: false
+        animation: false,
+        plugins: { legend: { display: false } }
       }
     });
 
-    // Recibir datos
+    // --- Recibir datos ---
     socket.on("nuevoDato", dato => {
       tempDiv.textContent = `Temp: ${parseFloat(dato.temperatura).toFixed(2)} °C`;
       bpmDiv.textContent = `BPM: ${dato.bpm || 0}`;
 
+      // Sonidos
       if(dato.pip) pip();
       if(dato.alarma) alarmaContinua();
       if(!dato.alarma) pararAlarma();
 
-      // actualizar gráfico
+      // Gráfico
       grafico.data.labels.push(new Date(dato.fecha).toLocaleTimeString());
       grafico.data.datasets[0].data.push(parseFloat(dato.eeg));
 
-      if(grafico.data.labels.length > 20){
+      if(grafico.data.labels.length > 50){
         grafico.data.labels.shift();
         grafico.data.datasets[0].data.shift();
       }
