@@ -73,7 +73,8 @@ socket.on("nuevoDato", dato => {
   grafico.update();
 
   // Actualizar temperatura en esquina
-  tempDiv.textContent = `Temp: ${dato.temperatura} °C`;
+  tempDiv.textContent = `Temp: ${parseFloat(dato.temperatura).toFixed(2)} °C`;
+
 });
 </script>
 </body>
