@@ -8,15 +8,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-app.use(express.json()); // para procesar JSON del body
+app.use(express.json());
 
 // --- Configuración para rutas de archivos estáticos ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(__dirname));
 
-// --- Variables para almacenar último dato ---
-let ultimoDato = { valor: 0, fecha: new Date().toISOString() };
+// --- Variables para almacenar últimos datos ---
+let ultimoDato = { eeg: 0, temperatura: 0, fecha: new Date().toISOString() };
 
 // --- Endpoint principal ---
 app.get("/", (req, res) => {
@@ -25,11 +25,11 @@ app.get("/", (req, res) => {
 
 // --- Endpoint para recibir datos del sensor ---
 app.post("/api/sensor", (req, res) => {
-  const { valor } = req.body;
-  ultimoDato = { valor, fecha: new Date().toISOString() };
+  const { eeg, temperatura } = req.body;
+  ultimoDato = { eeg, temperatura, fecha: new Date().toISOString() };
   console.log("Dato recibido:", ultimoDato);
 
-  // enviar al cliente conectado en tiempo real
+  // emitir a clientes conectados
   io.emit("nuevoDato", ultimoDato);
 
   res.json({ ok: true });
