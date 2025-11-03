@@ -46,7 +46,7 @@
     const tempDiv = document.getElementById("temperatura");
     const bpmDiv = document.getElementById("bpm");
 
-    // --- Sonido pip y alarma ---
+    // --- Sonido pip y alarma en la web ---
     function pip() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = audioCtx.createOscillator();
@@ -101,17 +101,18 @@
       }
     });
 
-    // --- Recibir datos ---
+    // --- Recibir datos desde ESP32/servidor ---
     socket.on("nuevoDato", dato => {
+      // Actualizar temp y BPM
       tempDiv.textContent = `Temp: ${parseFloat(dato.temperatura).toFixed(2)} °C`;
       bpmDiv.textContent = `BPM: ${dato.bpm || 0}`;
 
-      // Sonidos
+      // Sonidos según flags enviados
       if(dato.pip) pip();
       if(dato.alarma) alarmaContinua();
       if(!dato.alarma) pararAlarma();
 
-      // Gráfico
+      // Graficar EEG/ECG
       grafico.data.labels.push(new Date(dato.fecha).toLocaleTimeString());
       grafico.data.datasets[0].data.push(parseFloat(dato.eeg));
 
