@@ -1,31 +1,39 @@
-const express = require("express");
-const http = require("http");
-const cors = require("cors");
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
+
 const app = express();
 const server = http.createServer(app);
-const io = require("socket.io")(server, { cors: { origin: "*" } });
+const io = new Server(server);
 
-app.use(cors());
-app.use(express.json());
+app.use(express.json()); // para procesar JSON del body
 
-let dato = { valor: 0, fecha: new Date().toISOString() };
+// --- Configuración para rutas de archivos estáticos ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(__dirname));
 
-// Ruta raíz (para probar que el servidor responde)
-app.get('/', (req, res) => {
-  res.send('Servidor de monitoreo de sensor activo ✅');
+// --- Endpoint principal ---
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Recibir datos del sensor (POST)
-app.post("/data", (req, res) => {
-  dato = { valor: req.body.valor, fecha: new Date().toISOString() };
-  io.emit("nuevoDato", dato);
-  console.log("Dato recibido:", dato);
+// --- Endpoint para recibir datos del sensor ---
+app.post("/api/sensor", (req, res) => {
+  const { valor, fecha } = req.body;
+  console.log("Dato recibido:", req.body);
+  io.emit("nuevo_dato", { valor, fecha }); // enviar al gráfico en tiempo real
   res.json({ ok: true });
 });
 
-// Consultar el último dato recibido
-app.get("/data", (req, res) => res.json(dato));
+// --- WebSocket: comunicación en tiempo real ---
+io.on("connection", (socket) => {
+  console.log("Cliente conectado ✅");
+  socket.on("disconnect", () => console.log("Cliente desconectado ❌"));
+});
 
-// Iniciar servidor
-server.listen(10000, () => console.log("Servidor en puerto 10000"));
-
+// --- Iniciar servidor ---
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT} ✅`));
