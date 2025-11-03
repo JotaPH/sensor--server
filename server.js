@@ -20,3 +20,7 @@ app.post("/data", (req, res) => {
 app.get("/data", (req, res) => res.json(dato));
 
 server.listen(10000, () => console.log("Servidor en puerto 10000"));
+app.get('/', (req, res) => {
+  res.send('Servidor de monitoreo de sensor activo ✅');
+});
+
