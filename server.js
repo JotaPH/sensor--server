@@ -10,6 +10,12 @@ app.use(express.json());
 
 let dato = { valor: 0, fecha: new Date().toISOString() };
 
+// Ruta raíz (para probar que el servidor responde)
+app.get('/', (req, res) => {
+  res.send('Servidor de monitoreo de sensor activo ✅');
+});
+
+// Recibir datos del sensor (POST)
 app.post("/data", (req, res) => {
   dato = { valor: req.body.valor, fecha: new Date().toISOString() };
   io.emit("nuevoDato", dato);
@@ -17,10 +23,9 @@ app.post("/data", (req, res) => {
   res.json({ ok: true });
 });
 
+// Consultar el último dato recibido
 app.get("/data", (req, res) => res.json(dato));
 
+// Iniciar servidor
 server.listen(10000, () => console.log("Servidor en puerto 10000"));
-app.get('/', (req, res) => {
-  res.send('Servidor de monitoreo de sensor activo ✅');
-});
 
