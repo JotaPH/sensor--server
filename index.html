@@ -103,25 +103,28 @@
 
     // --- Recibir datos desde ESP32/servidor ---
     socket.on("nuevoDato", dato => {
-      // Actualizar temp y BPM
-      tempDiv.textContent = `Temp: ${parseFloat(dato.temperatura).toFixed(2)} °C`;
-      bpmDiv.textContent = `BPM: ${dato.bpm || 0}`;
+  const procesar = d => {
+    tempDiv.textContent = `Temp: ${parseFloat(d.temperatura).toFixed(2)} °C`;
+    bpmDiv.textContent = `BPM: ${d.bpm || 0}`;
 
-      // Sonidos según flags enviados
-      if(dato.pip) pip();
-      if(dato.alarma) alarmaContinua();
-      if(!dato.alarma) pararAlarma();
+    if (d.pip) pip();
+    if (d.alarma) alarmaContinua();
+    if (!d.alarma) pararAlarma();
 
-      // Graficar EEG/ECG
-      grafico.data.labels.push(new Date(dato.fecha).toLocaleTimeString());
-      grafico.data.datasets[0].data.push(parseFloat(dato.eeg));
+    grafico.data.labels.push(new Date(d.fecha).toLocaleTimeString());
+    grafico.data.datasets[0].data.push(parseFloat(d.eeg));
 
-      if(grafico.data.labels.length > 50){
-        grafico.data.labels.shift();
-        grafico.data.datasets[0].data.shift();
-      }
-      grafico.update();
-    });
+    if (grafico.data.labels.length > 50) {
+      grafico.data.labels.shift();
+      grafico.data.datasets[0].data.shift();
+    }
+    grafico.update();
+  };
+
+  // Si es arreglo, procesar cada uno
+  if (Array.isArray(dato)) dato.forEach(procesar);
+  else procesar(dato);
+});
   </script>
 </body>
 </html>
