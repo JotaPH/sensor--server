@@ -19,9 +19,25 @@ app.get("/", (req, res) => {
 });
 
 app.post("/api/sensor", (req, res) => {
-  const { eeg, temperatura, bpm, pip, alarma } = req.body;
-  io.emit("nuevoDato", { eeg, temperatura, bpm, pip, alarma, fecha: new Date().toISOString() });
-  console.log("Dato recibido:", req.body);
+  const data = req.body;
+
+  // Si llega un arreglo (lote), emitir cada dato individual
+  if (Array.isArray(data)) {
+    data.forEach(d => {
+      io.emit("nuevoDato", {
+        ...d,
+        fecha: new Date().toISOString()
+      });
+    });
+    console.log(`📦 Lote recibido con ${data.length} datos`);
+  } else {
+    io.emit("nuevoDato", {
+      ...data,
+      fecha: new Date().toISOString()
+    });
+    console.log("Dato recibido:", data);
+  }
+
   res.json({ ok: true });
 });
 
