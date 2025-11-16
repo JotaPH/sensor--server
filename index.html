@@ -2,9 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Monitoreo EEG/ECG</title>
+  <title>Temperatura en Tiempo Real</title>
+
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     html, body {
       margin: 0;
@@ -19,112 +21,60 @@
       width: 100%;
       height: 100vh;
     }
-    #info {
-      position: absolute;
-      top: 10px;
-      right: 20px;
-      text-align: right;
-      font-size: 1.5em;
-      background: rgba(255,255,255,0.7);
-      padding: 10px 15px;
-      border-radius: 10px;
-    }
-    #info div {
-      margin: 5px 0;
-    }
   </style>
 </head>
+
 <body>
-  <div id="info">
-    <div id="temperatura">Temp: -- °C</div>
-    <div id="bpm">BPM: --</div>
-  </div>
   <canvas id="grafico"></canvas>
 
   <script>
-    const socket = io("https://sensor-server-388w.onrender.com");
-    const tempDiv = document.getElementById("temperatura");
-    const bpmDiv = document.getElementById("bpm");
+    const socket = io();
 
-    // --- Sonido pip y alarma en la web ---
-    function pip() {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-      osc.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.05);
-    }
-
-    let alarmaSonando = false;
-    function alarmaContinua() {
-      if (alarmaSonando) return;
-      alarmaSonando = true;
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-      osc.connect(audioCtx.destination);
-      osc.start();
-      window.alarmaOsc = osc;
-    }
-
-    function pararAlarma() {
-      if (alarmaSonando && window.alarmaOsc) {
-        window.alarmaOsc.stop();
-        alarmaSonando = false;
-      }
-    }
-
-    // --- Configuración del gráfico ---
     const ctx = document.getElementById("grafico").getContext("2d");
+
     const grafico = new Chart(ctx, {
       type: "line",
       data: {
-        labels: [],
+        labels: [],  // Tiempo (segundos)
         datasets: [{
-          label: "EEG/ECG",
+          label: "Temperatura (°C)",
           data: [],
-          borderColor: "#0078d4",
+          borderColor: "#ff0000",
           borderWidth: 2,
           fill: false,
-          tension: 0.3
+          tension: 0.2
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: false } },
         animation: false,
-        plugins: { legend: { display: false } }
+        scales: {
+          x: { title: { display: true, text: "Tiempo (s)" }},
+          y: { title: { display: true, text: "Temperatura (°C)" }}
+        },
+        plugins: {
+          legend: { display: true }
+        }
       }
     });
 
-    // --- Recibir datos desde ESP32/servidor ---
-    socket.on("nuevoDato", dato => {
-  const procesar = d => {
-    tempDiv.textContent = `Temp: ${parseFloat(d.temperatura).toFixed(2)} °C`;
-    bpmDiv.textContent = `BPM: ${d.bpm || 0}`;
+    // ⏳ Recibir datos del servidor
+    socket.on("nuevoDato", d => {
+      const tiempo = parseFloat(d.tiempo);
+      const temperatura = parseFloat(d.temperatura);
 
-    if (d.pip) pip();
-    if (d.alarma) alarmaContinua();
-    if (!d.alarma) pararAlarma();
+      grafico.data.labels.push(tiempo);
+      grafico.data.datasets[0].data.push(temperatura);
 
-    grafico.data.labels.push(new Date(d.fecha).toLocaleTimeString());
-    grafico.data.datasets[0].data.push(parseFloat(d.eeg));
+      // Mantener solo 100 puntos
+      if (grafico.data.labels.length > 100) {
+        grafico.data.labels.shift();
+        grafico.data.datasets[0].data.shift();
+      }
 
-    if (grafico.data.labels.length > 50) {
-      grafico.data.labels.shift();
-      grafico.data.datasets[0].data.shift();
-    }
-    grafico.update();
-  };
-
-  // Si es arreglo, procesar cada uno
-  if (Array.isArray(dato)) dato.forEach(procesar);
-  else procesar(dato);
-});
+      grafico.update();
+    });
   </script>
 </body>
 </html>
